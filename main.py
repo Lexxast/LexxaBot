@@ -18,8 +18,10 @@ logging.basicConfig(
     format="[%(asctime)s] %(levelname)s - %(message)s"
 )
 
-# 🚀 Inicializar API y bot
-openai.api_key = OPENAI_API_KEY
+# ✅ Inicializar cliente OpenAI (nuevo método)
+client = openai.OpenAI(api_key=OPENAI_API_KEY)
+
+# ✅ Inicializar bot de Telegram y Flask
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
 app = Flask(__name__)
 
@@ -61,7 +63,7 @@ def reply_to_user(message):
     logging.info(f"📨 Mensaje de {message.chat.id}: {user_input}")
 
     try:
-        completion = openai.ChatCompletion.create(
+        completion = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 SYSTEM_MESSAGE,
@@ -69,9 +71,9 @@ def reply_to_user(message):
             ]
         )
 
-        response_text = completion['choices'][0]['message']['content']
-        usage = completion['usage']
-        logging.info(f"✅ Tokens usados: prompt={usage['prompt_tokens']} | completion={usage['completion_tokens']} | total={usage['total_tokens']}")
+        response_text = completion.choices[0].message.content
+        usage = completion.usage
+        logging.info(f"✅ Tokens usados: prompt={usage.prompt_tokens} | completion={usage.completion_tokens} | total={usage.total_tokens}")
 
         bot.send_message(message.chat.id, response_text)
 
@@ -83,4 +85,5 @@ def reply_to_user(message):
 if __name__ == '__main__':
     logging.info("✅ LEXXA ESTÁ VIVA Y LISTA PARA CALENTAR CHATS...")
     app.run(host='0.0.0.0', port=10000)
+
 
