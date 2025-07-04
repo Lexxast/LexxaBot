@@ -66,6 +66,6 @@ def handle_text(message):
 
 if __name__ == '__main__':
     bot.remove_webhook()
-    bot.set_webhook(url="https://lexxa-bot.onrender.com/8138207592:AAG-oO1TYFnA-7DK8795Y9gd7Fd4Bv8r2OM")
+    bot.set_webhook(url="https://lexxabot.onrender.com/8138207592:AAG-oO1TYFnA-7DK8795Y9gd7Fd4Bv8r2OM")
     app.run(host='0.0.0.0', port=10000)
 
