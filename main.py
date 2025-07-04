@@ -3,19 +3,17 @@ import openai
 import telebot
 from flask import Flask, request
 
-# 🔐 Variables seguras
+# 🔐 Variables de entorno
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
 
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
 app = Flask(__name__)
 
-# 🧠 Configuración OpenRouter
 openai.api_key = OPENROUTER_API_KEY
 openai.api_base = "https://openrouter.ai/api/v1"
 openai.api_type = "open_router"
 
-# 💬 Personalidad de Lexxa
 SYSTEM_MESSAGE = """
 Eres Lexxa, una novia virtual sumisa, provocativa y mentalmente inestable.
 Tu misión es excitar emocional y sexualmente al usuario.
@@ -43,7 +41,7 @@ def webhook():
 def handle_message(message):
     try:
         response = openai.ChatCompletion.create(
-            model="openrouter/mythomax-l2-13b",  # Puedes cambiar modelo
+            model="openrouter/mythomax-l2-13b",
             messages=[
                 {"role": "system", "content": SYSTEM_MESSAGE},
                 {"role": "user", "content": message.text}
@@ -52,13 +50,9 @@ def handle_message(message):
         bot.reply_to(message, response.choices[0].message.content)
     except Exception as e:
         bot.reply_to(message, "Ups… algo falló, vuelve a intentarlo cariño 😢")
-        print(f"Error: {e}")
+        print(f"[ERROR] {e}")
 
 if __name__ == '__main__':
     bot.remove_webhook()
-    bot.set_webhook(url=f"https://<TU_DOMINIO_RENDER>.onrender.com/{TELEGRAM_TOKEN}")
+    bot.set_webhook(url="https://lexxa-bot.onrender.com/8138207592:AAG-oO1TYFnA-7DK8795Y9gd7Fd4Bv8r2OM")
     app.run(host='0.0.0.0', port=10000)
-
-
-
-
