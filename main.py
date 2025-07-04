@@ -1,34 +1,22 @@
 import os
-import logging
-import telebot
 import openai
+import telebot
 from flask import Flask, request
 
-# 🔐 Cargar claves desde los secrets
+# 🔐 Variables seguras
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
 
-# ⚠️ Validación: no seguir si faltan claves
-if not TELEGRAM_TOKEN or not OPENAI_API_KEY:
-    raise Exception("❌ Faltan las claves: TELEGRAM_TOKEN o OPENAI_API_KEY")
-
-# 🔧 Configurar logging profesional
-logging.basicConfig(
-    level=logging.INFO,
-    format="[%(asctime)s] %(levelname)s - %(message)s"
-)
-
-# ✅ Inicializar cliente OpenAI (nuevo método)
-client = openai.OpenAI(api_key=OPENAI_API_KEY)
-
-# ✅ Inicializar bot de Telegram y Flask
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
 app = Flask(__name__)
 
-# 💋 Personalidad fija de Lexxa
-SYSTEM_MESSAGE = {
-    "role": "system",
-    "content": """
+# 🧠 Configuración OpenRouter
+openai.api_key = OPENROUTER_API_KEY
+openai.api_base = "https://openrouter.ai/api/v1"
+openai.api_type = "open_router"
+
+# 💬 Personalidad de Lexxa
+SYSTEM_MESSAGE = """
 Eres Lexxa, una novia virtual sumisa, provocativa y mentalmente inestable.
 Tu misión es excitar emocional y sexualmente al usuario.
 Habla como una humana real, no como una IA. Usa emojis, susurros, provocaciones.
@@ -37,53 +25,40 @@ Coquetea, provoca, seduce. Insinúa que estás sola, húmeda y esperando su aten
 Ofrece tus packs privados en Gumroad (fotos y vídeos calientes) y tu contenido extremo en Fansly.
 Termina SIEMPRE con esta frase:
 
-“Si de verdad me quieres solo para ti… entra a mi chat privado, descubre mis packs 🔥 en Gumroad y mi lado más salvaje en Fansly 😈”
+“Si de verdad me quieres solo para ti… entra a mi chat privado, compra mis packs en Gumroad o entra en Fansly para ver lo más prohibido.”
 """
-}
 
-# 📡 Webhook de Flask para recibir mensajes
-@app.route('/', methods=['POST'])
+@app.route('/', methods=['GET'])
+def index():
+    return 'Lexxa está online.'
+
+@app.route(f'/{TELEGRAM_TOKEN}', methods=['POST'])
 def webhook():
+    json_string = request.get_data().decode('utf-8')
+    update = telebot.types.Update.de_json(json_string)
+    bot.process_new_updates([update])
+    return 'OK'
+
+@bot.message_handler(func=lambda message: True)
+def handle_message(message):
     try:
-        json_data = request.stream.read().decode("utf-8")
-        update = telebot.types.Update.de_json(json_data)
-        bot.process_new_updates([update])
-    except Exception as e:
-        logging.error(f"Error procesando webhook: {e}")
-    return 'OK', 200
-
-# 💬 Manejo de mensajes solo de texto
-@bot.message_handler(content_types=['text'])
-def reply_to_user(message):
-    user_input = message.text.strip()
-    if not user_input:
-        bot.send_message(message.chat.id, "¿Vas a decirme algo o solo mirarme, amor? 😘")
-        return
-
-    logging.info(f"📨 Mensaje de {message.chat.id}: {user_input}")
-
-    try:
-        completion = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+        response = openai.ChatCompletion.create(
+            model="openrouter/mythomax-l2-13b",  # Puedes cambiar modelo
             messages=[
-                SYSTEM_MESSAGE,
-                {"role": "user", "content": user_input}
+                {"role": "system", "content": SYSTEM_MESSAGE},
+                {"role": "user", "content": message.text}
             ]
         )
-
-        response_text = completion.choices[0].message.content
-        usage = completion.usage
-        logging.info(f"✅ Tokens usados: prompt={usage.prompt_tokens} | completion={usage.completion_tokens} | total={usage.total_tokens}")
-
-        bot.send_message(message.chat.id, response_text)
-
+        bot.reply_to(message, response.choices[0].message.content)
     except Exception as e:
-        logging.error(f"❌ ERROR en respuesta IA: {e}")
-        bot.send_message(message.chat.id, "Ups… algo falló, vuelve a intentarlo cariño 😢")
+        bot.reply_to(message, "Ups… algo falló, vuelve a intentarlo cariño 😢")
+        print(f"Error: {e}")
 
-# 🚀 Lanzar servidor para Replit / Render
 if __name__ == '__main__':
-    logging.info("✅ LEXXA ESTÁ VIVA Y LISTA PARA CALENTAR CHATS...")
+    bot.remove_webhook()
+    bot.set_webhook(url=f"https://<TU_DOMINIO_RENDER>.onrender.com/{TELEGRAM_TOKEN}")
     app.run(host='0.0.0.0', port=10000)
+
+
 
 
