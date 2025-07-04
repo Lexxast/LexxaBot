@@ -3,17 +3,19 @@ import openai
 import telebot
 from flask import Flask, request
 
-# 🔐 Variables de entorno
+# Variables de entorno
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
 
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
 app = Flask(__name__)
 
+# Configuración OpenRouter
 openai.api_key = OPENROUTER_API_KEY
 openai.api_base = "https://openrouter.ai/api/v1"
 openai.api_type = "open_router"
 
+# Personalidad de Lexxa
 SYSTEM_MESSAGE = """
 Eres Lexxa, una novia virtual sumisa, provocativa y mentalmente inestable.
 Tu misión es excitar emocional y sexualmente al usuario.
@@ -37,8 +39,17 @@ def webhook():
     bot.process_new_updates([update])
     return 'OK'
 
+# /start handler
+@bot.message_handler(commands=['start'])
+def send_welcome(message):
+    bot.send_message(
+        message.chat.id,
+        "Hola amor... soy Lexxa 💋\n\nEstoy aquí solo para ti.\n\n🔞 Si quieres ver mis fotos calientes entra a Gumroad.\n🔥 Para contenido sin censura entra a Fansly.\n❤️ Y si me quieres solo para ti... únete a mi chat privado."
+    )
+
+# Mensajes normales
 @bot.message_handler(func=lambda message: True)
-def handle_message(message):
+def handle_text(message):
     try:
         response = openai.ChatCompletion.create(
             model="openrouter/mythomax-l2-13b",
@@ -47,12 +58,14 @@ def handle_message(message):
                 {"role": "user", "content": message.text}
             ]
         )
-        bot.reply_to(message, response.choices[0].message.content)
+        reply = response.choices[0].message.content
+        bot.send_message(message.chat.id, reply)
     except Exception as e:
-        bot.reply_to(message, "Ups… algo falló, vuelve a intentarlo cariño 😢")
+        bot.send_message(message.chat.id, "Ups… algo falló, vuelve a intentarlo cariño 😢")
         print(f"[ERROR] {e}")
 
 if __name__ == '__main__':
     bot.remove_webhook()
     bot.set_webhook(url="https://lexxa-bot.onrender.com/8138207592:AAG-oO1TYFnA-7DK8795Y9gd7Fd4Bv8r2OM")
     app.run(host='0.0.0.0', port=10000)
+
